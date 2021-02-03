@@ -186,9 +186,10 @@ static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
                 aiocb_list[i] = (const struct aiocb *)request->aiocbp;
         }
 
+        int status;
         Py_BEGIN_ALLOW_THREADS;
         /* Release the GIL so threads aren't waiting on us doing nothing */
-        int status = aio_suspend(
+        status = aio_suspend(
                         (const struct aiocb **const)aiocb_list,
                         length,
                         timeout);
