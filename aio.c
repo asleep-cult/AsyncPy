@@ -48,7 +48,7 @@ static PyObject *AioRequest_Read(PyObject *self, PyObject *args)
         request->aiocbp->aio_buf = malloc(sizeof(bufsize));
         request->aiocbp->aio_nbytes = bufsize;
 
-        aio_read(ret->aiocbp);
+        aio_read(request->aiocbp);
 
         return (PyObject *)request;
 }
