@@ -222,10 +222,5 @@ static struct PyModuleDef aiomodule = {
 PyMODINIT_FUNC
 PyInit_aio(void)
 {
-        PyObject *module = PyModule_Create(&aiomodule);
-        PyModule_AddObject(
-            module,
-            "AioRequest",
-            (PyObject *)&AioRequest_TypeObject);
-        return module;
+        return PyModule_Create(&aiomodule);
 }
