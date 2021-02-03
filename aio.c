@@ -3,7 +3,9 @@
 #include <signal.h>
 #include <Python.h>
 
-enum AioRequest_Type = {
+/* TODO: Add signal handler so the process isn't terminated */
+
+enum AioRequest_Type {
         READ,
         WRITE
 };
@@ -12,37 +14,38 @@ typedef struct AioRequest {
         PyObject_HEAD;
         int req_type;
         int usable;
-        struct aiocb *aiocbp;
+        struct aiocb aiocb_obj;
 } AioRequest;
 
 static PyTypeObject AioRequest_TypeObject = {
-        PyVarObject_HEAD_INIT(NULL, 0),
-        "AioRequest"
+        PyVarObject_HEAD_INIT(NULL, 0)
+        "AioRequest",
         sizeof(AioRequest)
 };
 
-static PyObject *make_aiorequest(struct aiocb *aiocbp)
+static AioRequest *make_aiorequest(struct aiocb aiocb_obj)
 {
-        AioRequest *req;
-        PyObject *object = PyObject_GC_New(req, &AioRequest_TypeObject);
-        (AioRequest *)object->usable = 1;
-        return req;
+	aiocb_obj.aio_reqprio = 0;
+	aiocb_obj.aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	aiocb_obj.aio_sigevent.sigev_signo = SIGUSR1;
+	aiocb_obj.aio_sigevent.sigev_value.sival_ptr = NULL;
+	AioRequest *obj;
+	obj = PyObject_GC_New(AioRequest, &AioRequest_TypeObject);
+	obj->aiocb_obj = aiocb_obj;
+	return obj;
 }
 
 static PyObject *AioRequest_Read(PyObject *self, PyObject *args)
 {
         int fd = PyLong_AsLong(PyTuple_GetItem(args, 0));
         int bufsize = PyLong_AsLong(PyTuple_GetItem(args, 1));
-        struct aiocb *aiocbp = malloc(sizeof(struct aiocb));
-        aiocbp->aio_filedes = fd;
-        aiocbp->aio_buf = malloc(sizeof(bufsize));
-        aiocbp->aio_nbytes = bufsize;
-        aiocbp->aio_reqprio = 0;
-        aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-        aiocbp->aio_sigevent.sigev_signo = IO_SIGNAL;
-        aiocbp->aio_sigevent.sigev_value.sival_ptr = NULL;
-        aio_read(aiocbp);
-        return make_aiorequest(aiocbp);
+        struct aiocb aiocb_obj;
+        aiocb_obj.aio_fildes = fd;
+        aiocb_obj.aio_buf = malloc(sizeof(bufsize));
+        aiocb_obj.aio_nbytes = bufsize;
+        AioRequest *ret = make_aiorequest(aiocb_obj);
+        aio_read(&ret->aiocb_obj);
+        return (PyObject *)ret;
 }
 
 static PyObject *AioRequest_Write(PyObject *self, PyObject *args)
@@ -51,15 +54,13 @@ static PyObject *AioRequest_Write(PyObject *self, PyObject *args)
         PyObject *bytes = PyTuple_GetItem(args, 1);
         char *buffer = PyBytes_AsString(bytes);
         Py_ssize_t bufsize = PyBytes_Size(bytes);
-        struct aiocb *aiocbp = malloc(sizeof(struct aiocb));
-        aiocbp->aio_filedes = fd;
-        aiocbp->aio_buf = buffer;
-        aiocbp->aio_nbytes = bufsize;
-        aiocbp->aio_reqprio = 0;
-        aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-        aiocbp->aio_sigevent.sigev_signo = IO_SIGNAL;
-        aiocbp->aio_sigevent.sigev_value.sival_ptr = NULL;
-        return make_aiorequest(aiocbp);
+        struct aiocb aiocb_obj;
+        aiocb_obj.aio_fildes = fd;
+        aiocb_obj.aio_buf = buffer;
+        aiocb_obj.aio_nbytes = bufsize;
+        AioRequest *ret = make_aiorequest(aiocb_obj);
+        aio_write(&ret->aiocb_obj);
+        return (PyObject *)ret;
 }
 
 static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
@@ -69,12 +70,11 @@ static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
                 PyErr_SetString(PyExc_ValueError, "Can\'t reuse requests");
         }
         req->usable = 0;
-        if (rep->req_type == READ) {
-                char *buffer = req->aiocbp->aio_buf;
-                int buflen = req->aiocbp->aio_nbytes;
-                char *bytes = PyBytes_FromStringAndSize(buffer);
+        if (req->req_type == READ) {
+                char *buffer = (char *)req->aiocb_obj.aio_buf;
+                int buflen = req->aiocb_obj.aio_nbytes;
+                PyObject *bytes = PyBytes_FromStringAndSize(buffer, buflen);
                 free(buffer);
-                free(req->aiocbp);
                 return bytes;
         }
         Py_RETURN_NONE;
