@@ -225,9 +225,12 @@ PyInit_aio(void)
 {
         PyObject *module = PyModule_Create(&aiomodule);
         Py_INCREF(&AioRequest_TypeObject);
-        PyModule_AddObject(
+        int status = PyModule_AddType(
                 module,
                 "AioRequest",
-                (PyObject *)&AioRequest_TypeObject);
+                &AioRequest_TypeObject);
+        if (status < 0) {
+                return NULL;
+        }
         return module;
 }
