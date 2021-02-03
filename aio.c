@@ -35,7 +35,7 @@ static AioRequest *make_aiorequest()
 	request->aiocbp->aio_sigevent.sigev_signo = SIGUSR1;
 	request->aiocbp->aio_sigevent.sigev_value.sival_ptr = NULL;
 
-	return obj;
+	return request;
 }
 
 static PyObject *AioRequest_Read(PyObject *self, PyObject *args)
@@ -61,27 +61,27 @@ static PyObject *AioRequest_Write(PyObject *self, PyObject *args)
         Py_ssize_t bufsize = PyBytes_Size(bytes);
 
         AioRequest *request = make_aiorequest(aiocb_obj);
-        request->aiocbp.aio_fildes = fd;
-        request->aiocbp.aio_buf = buffer;
-        request->aiocbp.aio_nbytes = bufsize;
+        request->aiocbp->aio_fildes = fd;
+        request->aiocbp->aio_buf = buffer;
+        request->aiocbp->aio_nbytes = bufsize;
 
-        aio_write(ret->aiocbp);
+        aio_write(request->aiocbp);
 
         return (PyObject *)request;
 }
 
 static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
 {
-        AioRequest *req = (AioRequest *)PyTuple_GetItem(args, 0);
+        AioRequest *request = (AioRequest *)PyTuple_GetItem(args, 0);
 
-        if (!req->usable) {
+        if (!request->usable) {
                 PyErr_SetString(PyExc_ValueError, "Can\'t reuse requests");
         }
-        req->usable = 0;
+        request->usable = 0;
 
         if (req->req_type == READ) {
-                char *buffer = (char *)req->aiocb_obj.aio_buf;
-                int buflen = req->aiocb_obj.aio_nbytes;
+                char *buffer = (char *)request->aiocbp->aio_buf;
+                int buflen = request->aiocbp->aio_nbytes;
                 PyObject *bytes = PyBytes_FromStringAndSize(buffer, buflen);
                 return bytes;
         }
