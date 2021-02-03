@@ -35,6 +35,7 @@ static PyTypeObject AioRequest_TypeObject = {
         .tp_itemsize = 0,
         .tp_methods = AioRequest_Methods,
         .tp_flags = Py_TPFLAGS_DEFAULT,
+        .tp_new = PyType_GenericNew
 };
 
 static AioRequest *make_aiorequest(int fd)
@@ -222,5 +223,11 @@ static struct PyModuleDef aiomodule = {
 PyMODINIT_FUNC
 PyInit_aio(void)
 {
-        return PyModule_Create(&aiomodule);
+        PyObject *module = PyModule_Create(&aiomodule);
+        Py_INCREF(&AioRequest_TypeObject);
+        PyModule_AddObject(
+                module,
+                "AioRequest",
+                (PyObject *)&AioRequest_TypeObject);
+        return module;
 }
