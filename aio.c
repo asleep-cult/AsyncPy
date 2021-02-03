@@ -167,7 +167,7 @@ static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
         }
 
         int length = PyList_Size(requests);
-        const struct *aiocb aiocb_list[length];
+        const struct aiocb *aiocb_list[length];
 
         for (int i = 0; i < length; i++) {
                 AioRequest *request = (AioRequest *)PyList_GetItem(
@@ -176,7 +176,7 @@ static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
         }
 
         int status = aio_suspend(
-                        (const struct *aiocb const aiocb_list[])aiocb_list,
+                        (const struct aiocb *const aiocb_list[])aiocb_list,
                         length,
                         timeout);
 
