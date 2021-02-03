@@ -88,7 +88,7 @@ if sys.platform in ('linux', 'linux2'):
             completed_reads = []
             completed_writes = []
 
-            aio.suspend([f._internal_request for r in requests], timeout)
+            aio.suspend([r._internal_request for r in requests], timeout)
 
             for request in requests:
                 try:
