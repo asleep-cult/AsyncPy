@@ -224,7 +224,7 @@ PyMODINIT_FUNC
 PyInit_aio(void)
 {
         PyObject *module = PyModule_Create(&aiomodule);
-        PyTypeObject *object = &AioRequest_Type;
+        PyTypeObject *object = &AioRequest_TypeObject;
         Py_INCREF((PyObject *)object);
         int status = PyModule_AddObject(
                 module,
