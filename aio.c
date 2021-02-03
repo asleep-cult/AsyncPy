@@ -30,11 +30,11 @@ static PyMethodDef AioRequest_Methods[] = {
 
 static PyTypeObject AioRequest_TypeObject = {
         PyVarObject_HEAD_INIT(NULL, 0)
-        "aio.AioRequest",
-        sizeof(AioRequest),
+        .tp_name = "aio.AioRequest",
+        .tp_basicsize = sizeof(AioRequest),
+        .tp_itemsize = 0,
         .tp_methods = AioRequest_Methods,
         .tp_flags = Py_TPFLAGS_DEFAULT,
-        .tp_new = PyType_GenericNew,
 };
 
 static AioRequest *make_aiorequest(int fd)
