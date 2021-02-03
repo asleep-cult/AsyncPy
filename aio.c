@@ -90,7 +90,8 @@ static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
                 return bytes;
         }
 
-        Py_RETURN_NONE;
+        PyErr_SetString(PyExc_ValueError, "can\'t do that yet");
+        return NULL;
 }
 
 static PyMethodDef aiomethods[] = {
