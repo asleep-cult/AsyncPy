@@ -176,7 +176,7 @@ static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
         }
 
         int status = aio_suspend(
-                        (const struct aiocb *const aiocb_list*),
+                        (const(const struct aiocb *) *)aiocbp_list,
                         length,
                         timeout);
 
