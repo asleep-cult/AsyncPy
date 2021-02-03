@@ -125,6 +125,7 @@ static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
 
         if (ret == -1) {
                 PyErr_SetFromErrno(PyExc_OSError);
+                return NULL;
         }
 
         if (request->req_type == READ) {
