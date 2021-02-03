@@ -4,7 +4,7 @@
 #include <Python.h>
 
 /* TODO: Add signal handler so the process isn't terminated */
-/* Fix segfault in Read */
+/* Get rid of memory leaks */
 
 enum AioRequest_Type {
         READ,
@@ -61,7 +61,12 @@ static PyObject *AioRequest_Read(PyObject *self, PyObject *args)
         request->aiocbp->aio_buf = malloc(sizeof(bufsize));
         request->aiocbp->aio_nbytes = bufsize;
 
-        aio_read(request->aiocbp);
+        int status = aio_read(request->aiocbp);
+
+        if (status == -1) {
+                PyErr_SetFromErrno(PyExc_OSError);
+                return NULL;
+        }
 
         return (PyObject *)request;
 }
@@ -78,7 +83,12 @@ static PyObject *AioRequest_Write(PyObject *self, PyObject *args)
         request->aiocbp->aio_buf = buffer;
         request->aiocbp->aio_nbytes = bufsize;
 
-        aio_write(request->aiocbp);
+        int status = aio_write(request->aiocbp);
+
+        if (status == -1) {
+                PyErr_SetFromErrno(PyExc_OSError);
+                return NULL;
+        }
 
         return (PyObject *)request;
 }
