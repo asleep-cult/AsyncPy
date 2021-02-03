@@ -45,6 +45,7 @@ static PyObject *AioRequest_Read(PyObject *self, PyObject *args)
         int bufsize = PyLong_AsLong(PyTuple_GetItem(args, 1));
 
         AioRequest *request = make_aiorequest();
+        request->req_type = READ;
         request->aiocbp->aio_fildes = fd;
         request->aiocbp->aio_buf = malloc(sizeof(bufsize));
         request->aiocbp->aio_nbytes = bufsize;
@@ -62,6 +63,7 @@ static PyObject *AioRequest_Write(PyObject *self, PyObject *args)
         Py_ssize_t bufsize = PyBytes_Size(bytes);
 
         AioRequest *request = make_aiorequest();
+        request->req_type = WRITE;
         request->aiocbp->aio_fildes = fd;
         request->aiocbp->aio_buf = buffer;
         request->aiocbp->aio_nbytes = bufsize;
