@@ -129,7 +129,7 @@ static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args)
 {
         AioRequest *request = (AioRequest *)self;
 
-        int status = aio_cancel(request->fd, request->aiobcp);
+        int status = aio_cancel(request->fd, request->aiocbp);
 
         if (status != AIO_CANCELED) {
                 if (status == AIO_NOTCANCELED) {
@@ -167,12 +167,12 @@ static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
         }
 
         int length = PyList_Size(requests);
-        const struct aiocb *const aiocb_list[length];
+        struct aiocb *aiocb_list[length];
 
         for (int i = 0; i < length; i++) {
                 AioRequest *request = (AioRequest *)PyList_GetItem(
                                                                 requests, i);
-                aiocb_list[i] = (const struct aiobc *)request->aiocbp;
+                aiocb_list[i] = request->aiocbp;
         }
 
         int status = aio_suspend(aiocb_list, length, timeout);
