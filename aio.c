@@ -32,10 +32,9 @@ static PyTypeObject AioRequest_TypeObject = {
         PyVarObject_HEAD_INIT(NULL, 0)
         "aio.AioRequest",
         sizeof(AioRequest),
-        .tp_methods = AioRequest_Methods
+        .tp_methods = AioRequest_Methods,
         .tp_flags = Py_TPFLAGS_DEFAULT,
         .tp_new = PyType_GenericNew,
-        .tp_getattr = PyObject_GenericGetAttr
 };
 
 static AioRequest *make_aiorequest(int fd)
