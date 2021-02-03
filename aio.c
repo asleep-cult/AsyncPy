@@ -46,7 +46,7 @@ static AioRequest *make_aiorequest(int fd)
         request->aiocbp->aio_fildes = fd;
 	request->aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
 	request->aiocbp->aio_sigevent.sigev_signo = SIGUSR1;
-	request->aiocbp->aio_sigevent.sigev_value.sival_ptr = NULL;
+	request->aiocbp->aio_sigevent.sigev_value.sival_ptr = request;
 
 	return request;
 }
@@ -186,10 +186,13 @@ static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
                 aiocb_list[i] = (const struct aiocb *)request->aiocbp;
         }
 
+        Py_BEGIN_ALLOW_THREADS;
+        /* Release the GIL so threads aren't waiting on us doing nothing */
         int status = aio_suspend(
                         (const struct aiocb **const)aiocb_list,
                         length,
                         timeout);
+        Py_END_ALLOW_THREADS;
 
         if (status == -1) {
                 PyErr_SetFromErrno(PyExc_OSError);

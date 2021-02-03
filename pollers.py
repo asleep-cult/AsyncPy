@@ -33,8 +33,8 @@ class SelectorPoller:
 
     def poll(self, timeout=0):
         read, write, _ = select.select(
-            list(self._read_fds),
-            list(self._write_fds),
+            list(self._read_args),
+            list(self._write_args),
             [],
             timeout)
         read = [self._read_args[fd] for fd in read]
