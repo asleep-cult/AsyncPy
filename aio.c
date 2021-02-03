@@ -30,7 +30,7 @@ static AioRequest *make_aiorequest()
 	request = PyObject_GC_New(AioRequest, &AioRequest_TypeObject);
 
 	request->aiocbp = malloc(sizeof(struct aiocb));
-	request->aiocbp->aiocbp->aio_reqprio = 0;
+	request->aiocbp->aio_reqprio = 0;
 	request->aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
 	request->aiocbp->aio_sigevent.sigev_signo = SIGUSR1;
 	request->aiocbp->aio_sigevent.sigev_value.sival_ptr = NULL;
@@ -44,9 +44,9 @@ static PyObject *AioRequest_Read(PyObject *self, PyObject *args)
         int bufsize = PyLong_AsLong(PyTuple_GetItem(args, 1));
 
         AioRequest *request = make_aiorequest();
-        request->aiocbp.aio_fildes = fd;
-        request->aiocbp.aio_buf = malloc(sizeof(bufsize));
-        request->aiocbp.aio_nbytes = bufsize;
+        request->aiocbp->aio_fildes = fd;
+        request->aiocbp->aio_buf = malloc(sizeof(bufsize));
+        request->aiocbp->aio_nbytes = bufsize;
 
         aio_read(ret->aiocbp);
 
@@ -60,7 +60,7 @@ static PyObject *AioRequest_Write(PyObject *self, PyObject *args)
         char *buffer = PyBytes_AsString(bytes);
         Py_ssize_t bufsize = PyBytes_Size(bytes);
 
-        AioRequest *request = make_aiorequest(aiocb_obj);
+        AioRequest *request = make_aiorequest();
         request->aiocbp->aio_fildes = fd;
         request->aiocbp->aio_buf = buffer;
         request->aiocbp->aio_nbytes = bufsize;
@@ -79,7 +79,7 @@ static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
         }
         request->usable = 0;
 
-        if (req->req_type == READ) {
+        if (request->req_type == READ) {
                 char *buffer = (char *)request->aiocbp->aio_buf;
                 int buflen = request->aiocbp->aio_nbytes;
                 PyObject *bytes = PyBytes_FromStringAndSize(buffer, buflen);
