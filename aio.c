@@ -20,9 +20,9 @@ typedef struct AioRequest {
 } AioRequest;
 
 static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args);
-PyObject *AioRequest_Cancel(PyObject *self, PyObject *args);
+static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args);
 
-static PyMethodDef AioRequest_Methods {
+static PyMethodDef AioRequest_Methods[] = {
         {"get_result", AioRequest_GetResult, METH_VARARGS, NULL},
         {"cancel", AioRequest_Cancel, METH_VARARGS, NULL},
         {NULL, NULL, 0, NULL}        /* Sentinel */
@@ -104,7 +104,6 @@ static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
                         PyErr_SetString(
                                 PyExc_OSError,
                                 "Can't get result from cancelled request");
-                        )
                 }
                 else {
                         PyErr_SetFromErrno(PyExc_OSError);
@@ -123,17 +122,17 @@ static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
                 PyObject *bytes = PyBytes_FromStringAndSize(buffer, ret);
                 return bytes;
         }
-        return ret;
+        return PyLong_FromLong(ret);
 }
 
-PyObject *AioRequest_Cancel(PyObject *self, PyObject *args)
+static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args)
 {
-        PyObject *request = (AioRequest *)self;
+        AioRequest *request = (AioRequest *)self;
 
-        int status = aio_cancel(request->aiobcp);
+        int status = aio_cancel(request->fd, request->aiobcp);
 
-        if (status != AIO_CANCELLED) {
-                if (status == AIO_NOTCANCELLED) {
+        if (status != AIO_CANCELED) {
+                if (status == AIO_NOTCANCELED) {
                         PyErr_SetString(
                                 PyExc_OSError,
                                 "Failed to cancel request");
@@ -167,13 +166,13 @@ static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
                 timeout = NULL;
         }
 
-        int length = PyList_Size(aiocbs);
+        int length = PyList_Size(requests);
         const struct aiocb *const aiocb_list[length];
 
         for (int i = 0; i < length; i++) {
                 AioRequest *request = (AioRequest *)PyList_GetItem(
                                                                 requests, i);
-                aiocb_list[i] = (const aiobc *)request->aiocbp;
+                aiocb_list[i] = (const struct aiobc *)request->aiocbp;
         }
 
         int status = aio_suspend(aiocb_list, length, timeout);
