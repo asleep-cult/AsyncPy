@@ -32,10 +32,10 @@ static PyTypeObject AioRequest_TypeObject = {
         PyVarObject_HEAD_INIT(NULL, 0)
         .tp_name = "aio.AioRequest",
         .tp_basicsize = sizeof(AioRequest),
-        // .tp_itemsize = 0,
-        // .tp_methods = AioRequest_Methods,
-        // .tp_flags = Py_TPFLAGS_DEFAULT,
-        // .tp_new = PyType_GenericNew
+        .tp_itemsize = 0,
+        .tp_methods = AioRequest_Methods,
+        .tp_flags = Py_TPFLAGS_DEFAULT,
+        .tp_new = PyType_GenericNew
 };
 
 static AioRequest *make_aiorequest(int fd)
@@ -225,6 +225,9 @@ PyInit_aio(void)
 {
         PyObject *module = PyModule_Create(&aiomodule);
         PyTypeObject *object = &AioRequest_TypeObject;
+        if (PyType_Ready(object) < 0) {
+                return NULL;
+        }
         Py_INCREF((PyObject *)object);
         int status = PyModule_AddObject(
                 module,
