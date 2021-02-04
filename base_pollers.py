@@ -20,7 +20,7 @@ class IOPollerSubmission:
     def __repr__(self):
         return \
             f'<IOPollerSubmission ident={self.ident}, ' \
-            f'callbacks={self.callback}, window={self.window}, ' \
+            f'callbacks={self.callbacks}, window={self.window}, ' \
             f'times_polled={self.times_polled}>'
 
 

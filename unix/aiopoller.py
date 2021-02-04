@@ -16,14 +16,15 @@ class AioPoller(IOPollerBase):
 
         for submission in list(submissions.values()):
             submission.times_polled += 1
-            print(submissions.times_polled)
             try:
                 result = submission.internal.get_result()
             except BlockingIOError:
+                print(submission, 'BLOCKING')
                 continue
-
+            print('RESULT', result)
             submissions.pop(submission.ident)
             submission.call_callbacks(self.mux, result)
+            print(submission, 'SCHED')
             completed.append(submission)
 
         return completed
