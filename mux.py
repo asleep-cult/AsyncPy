@@ -3,8 +3,8 @@ import collections
 
 class Mux:
     def __init__(self, iopoller, hpoller):
-        self.iopoller = iopoller
-        self.hpoller = hpoller
+        self.iopoller = iopoller(self)
+        self.hpoller = hpoller(self)
         self.pending_calls = collections.deque()
 
     def add_pending_call(self, callback):

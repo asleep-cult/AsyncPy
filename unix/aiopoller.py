@@ -1,4 +1,4 @@
-import aio
+from . import aio
 import signal
 
 from ..base_pollers import IOPollerBase, IOPollerSubmission, MuxHibrenatePoller
@@ -13,13 +13,15 @@ class AioPoller(IOPollerBase):
     def _check_submissions(self, submissions):
         completed = []
 
-        for submission in submissions:
+        for submission in list(submissions.values()):
             submission.times_polled += 1
+            print(submissions.times_polled)
             try:
                 result = submission.internal.get_result()
             except BlockingIOError:
                 continue
 
+            submissions.pop(submission.ident)
             submission.call_callbacks(self.mux, result)
             completed.append(submission)
 
@@ -66,7 +68,7 @@ class AioPoller(IOPollerBase):
 class AioHibrenatePoller(MuxHibrenatePoller):
     def poll(self):
         self.awake = False
-        signal.sigwait(IO_SIGNAL)
+        signal.sigwait([IO_SIGNAL])
         self.awake = True
 
     def wakeup(self):
