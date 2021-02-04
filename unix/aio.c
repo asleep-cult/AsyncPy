@@ -42,11 +42,11 @@ static AioRequest *make_aiorequest(int fd)
 {
 	AioRequest *request;
 	request = PyObject_GC_New(AioRequest, &AioRequest_TypeObject);
-        request->fd = fd;
+    request->fd = fd;
 	request->aiocbp = malloc(sizeof(struct aiocb));
-        request->usable = 1;
+    request->usable = 1;
 	request->aiocbp->aio_reqprio = 0;
-        request->aiocbp->aio_fildes = fd;
+    request->aiocbp->aio_fildes = fd;
 	request->aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
 	request->aiocbp->aio_sigevent.sigev_signo = SIGUSR1;
 	request->aiocbp->aio_sigevent.sigev_value.sival_ptr = request;

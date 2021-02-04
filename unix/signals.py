@@ -1,74 +1,44 @@
 import signal
-import warnings
 
-attached = False
 
-class SigHandler:
+class SignoHandle:
     def __init__(self, signo):
         self.signo = signo
         self.original = signal.getsignal(signo)
-        self.funcs = []
-        self.call_original = True
-        self.attached = False
+        self.call_original = False
+        self.callbacks = []
+        signal.signal(signo, self)
 
-    def clear(self):
-        self.funcs.clear()
+    def add(self, callback):
+        self.callbacks.append(callback)
 
-    def remove(func):
-        self.funcs.remove(func)
+    def __call__(self, signo, frame):
+        for func in self.callbacks:
+            func(signo, frame)
 
-    def add(func):
-        self.funcs.append(func)
-        if not self.attached:
-            warnings.warn(
-                RuntimeWarning,
-                "Adding to detached signal handler %r" % self
-            )
-
-    def detach(self):
-        self.attached = True
-        signal.signal(self.signo, self.original)
-
-    def attach(self):
-        self.attached = False
-        signal.signal(self.signo, self)
-
-    def __call__(self, signum, frame):
         if self.call_original:
-            self.original(signum, frame)
-        for func in self.funcs:
-            func(signum, frame)
+            self.original(signo, frame)
 
 
-class SigReceiver:
+class SignalHub:
     def __init__(self):
-        self._handlers = {}
+        self.sigmap = {}
 
-    def get_handler(self, signo):
-        return self._handlers.get(signo, None)
+    def get(self, signo):
+        return self.sigmap.get(signo)
 
-    def signal(self, signo, func):
-        handler = self.get_handler(signo)
-        if handler is not None:
-            handler = SigHandler(signo)
-        handler.add(func)
-        return handler
-
-    def attach(self):
-        global attached
-        attached = True
-
-        for handler in self._handlers.values():
-            handler.attach()
-
-    def detach(self):
-        global attached
-        attached = False
-
-        for handler in self._handlers.values():
-            handler.detach()
+    def signal(self, signo, callback, call_original=False):
+        handle = self.sigmap.get(signo)
+        if handle is None:
+            handle = SignoHandle(signo)
+            handle.call_original = call_original
+        handle.add(callback)
 
     def poll(self, timeout=0):
-        if timeout == 0:
-            return signal.sigwaitinfo(list(self._handlers))
-        return signal.sigtimedwait(list(self._handlers), timeout)
+        return signal.sigtimedwait(list(self.sigmap), timeout)
+
+    def poll_no_timeout(self):
+        return signal.sigwaitinfo(list(self.sigmap))
+
+
+signal_hub = SignalHub()
