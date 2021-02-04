@@ -1,3 +1,6 @@
+import functools
+
+
 class IOPollerSubmission:
     """
     A submission to an I/O poller.
@@ -9,9 +12,10 @@ class IOPollerSubmission:
         self.times_polled = 0
         self.window = window
 
-    def call_callbacks(self, *args, **kwargs):
+    def call_callbacks(self, mux, *args, **kwargs):
         for callback in self.callbacks:
-            callback(*args, **kwargs)
+            callback = functools.partial(callback, *args, **kwargs)
+            mux.add_pending_call(callback)
 
     def __repr__(self):
         return \

@@ -20,7 +20,7 @@ class AioPoller(IOPollerBase):
             except BlockingIOError:
                 continue
 
-            submission.call_callbacks(result)
+            submission.call_callbacks(self.mux, result)
             completed.append(submission)
 
         return completed
