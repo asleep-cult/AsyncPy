@@ -15,7 +15,6 @@ typedef struct AioRequest {
         PyObject_HEAD;
         int fd;
         int req_type;
-        int usable;
         struct aiocb *aiocbp;
 } AioRequest;
 
@@ -48,7 +47,6 @@ static AioRequest *make_aiorequest(int fd)
         request = PyObject_GC_New(AioRequest, &AioRequest_TypeObject);
         request->fd = fd;
         request->aiocbp = malloc(sizeof(struct aiocb));
-        request->usable = 1;
         request->aiocbp->aio_reqprio = 0;
         request->aiocbp->aio_fildes = fd;
         request->aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
@@ -103,12 +101,6 @@ static PyObject *AioRequest_Write(PyObject *self, PyObject *args)
 static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args)
 {
         AioRequest *request = (AioRequest *)self;
-
-        if (!request->usable) {
-                PyErr_SetString(PyExc_ValueError, "Can\'t reuse requests");
-                return NULL;
-        }
-        request->usable = 0;
 
         int status = aio_error(request->aiocbp);
         if (status != 0) {
