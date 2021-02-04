@@ -32,13 +32,14 @@ class SignalHub:
         if handle is None:
             handle = SignoHandle(signo)
             handle.call_original = call_original
+            self.sigmap[signo] = handle
         handle.add(callback)
 
     def poll(self, timeout=0):
         return signal.sigtimedwait(list(self.sigmap), timeout)
 
     def poll_no_timeout(self):
-        return signal.sigwait(list(self.sigmap))
+        return signal.sigwaitinfo(list(self.sigmap))
 
 
 signal_hub = SignalHub()

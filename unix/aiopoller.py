@@ -19,12 +19,11 @@ class AioPoller(IOPollerBase):
             try:
                 result = submission.internal.get_result()
             except BlockingIOError:
-                print(submission, 'BLOCKING')
+                print(submission, 'NOT READY')
                 continue
-            print('RESULT', result)
             submissions.pop(submission.ident)
             submission.call_callbacks(self.mux, result)
-            print(submission, 'SCHED')
+            print(submission, 'SCHEDULE', 'RESULT', submission)
             completed.append(submission)
 
         return completed
