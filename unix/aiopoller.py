@@ -3,8 +3,9 @@ import signal
 
 from ..base_pollers import IOPollerBase, IOPollerSubmission, MuxHibrenatePoller
 from ..utils import get_fileno
+from .signals import signal_hub
 
-IO_SIGNAL = signal.SIGUSR1
+WAKEUP_SIGNAL = signal.SIGUSR1
 READ = 0
 WRITE = 1
 
@@ -68,8 +69,8 @@ class AioPoller(IOPollerBase):
 class AioHibrenatePoller(MuxHibrenatePoller):
     def poll(self):
         self.awake = False
-        signal.sigwait([IO_SIGNAL])
+        signal_hub.poll_no_timeout()
         self.awake = True
 
     def wakeup(self):
-        signal.raise_signal(IO_SIGNAL)
+        signal.raise_signal(WAKEUP_SIGNAL)
