@@ -15,9 +15,12 @@ class Mux:
         while True:
             if not self.pending_calls:
                 self.hpoller.poll()
-            self.iopoller.poll(0)
-            for callback in self.pending_calls:
+
+            if self.pending_calls:
+                callback = self.pending_calls.popleft()
                 callback()
+
+            self.iopoller.poll(0)
 
     def __repr__(self):
         return \
