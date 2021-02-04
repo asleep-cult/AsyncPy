@@ -61,10 +61,10 @@ class IOPollerBase:
             f'outstanding_writes={len(self._writes)}>'
 
 
-class MuxHibrenatePoller:
+class MuxHibernatePoller:
     def __init__(self, mux):
         """
-        A poller that puts a Multiplexer into an interruptable hibrenating
+        A poller that puts a Multiplexer into an interruptable hibernating
         state.
         """
         self.mux = mux
