@@ -5,6 +5,8 @@ from ..base_pollers import IOPollerBase, IOPollerSubmission, MuxHibrenatePoller
 from ..utils import get_fileno
 
 IO_SIGNAL = signal.SIGUSR1
+READ = 0
+WRITE = 1
 
 
 class AioPoller(IOPollerBase):
@@ -24,26 +26,26 @@ class AioPoller(IOPollerBase):
         return completed
 
     def poll(self, timeout=0):
-        submissions = [*self._reads.values(), *self._writes.values()]
-
         if timeout != 0:
-            internal_requests = [s.internal for s in submissions]
+            internal_requests = \
+                [s.internal for s in self._reads.values()] + \
+                [s.internal for s in self._writes.values()]
             aio.suspend(internal_requests, timeout)
 
         reads = self._check_submissions(self._reads)
         writes = self._check_submissions(self._writes)
         return reads, writes
 
-    # TODO: Expose fd and req_type in aio.c
-    def submit(self, fd, request_type, aio_request, callbacks=None):
-        fd = get_fileno(fd)
+    def submit(self, aio_request, callbacks=None):
+        fd = aio_request.fileno()
+        request_type = aio_request.req_type()
         submission = IOPollerSubmission(
             fd, callbacks=callbacks, internal=aio_request
         )
 
-        if request_type == 0:
+        if request_type == READ:
             self._reads[fd] = submission
-        elif request_type == 1:
+        elif request_type == WRITE:
             self._writes[fd] = submission
 
         return submission
@@ -51,13 +53,13 @@ class AioPoller(IOPollerBase):
     def read(self, fd, bufsize, callbacks):
         fd = get_fileno(fd)
         request = aio.read(fd, bufsize)
-        submission = self.submit(fd, 0, request, callbacks)
+        submission = self.submit(request, callbacks)
         return submission
 
     def write(self, fd, data, callbacks):
         fd = get_fileno(fd)
         request = aio.write(fd, data)
-        submission = self.submit(fd, 1, request, callbacks)
+        submission = self.submit(request, callbacks)
         return submission
 
 

@@ -21,10 +21,14 @@ typedef struct AioRequest {
 
 static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args);
 static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args);
+static PyObject *AioRequest_Fileno(Pyobject *self, PyObject *args);
+static PyObject *AioRequest_Reqtype(Pyobject *self, PyObject *args);
 
 static PyMethodDef AioRequest_Methods[] = {
         {"get_result", AioRequest_GetResult, METH_VARARGS, NULL},
         {"cancel", AioRequest_Cancel, METH_VARARGS, NULL},
+        {"fileno", AioRequest_Fileno, METH_VARARGS, NULL},
+        {"req_type", AioRequest_Reqtype, METH_VARARGS, NULL},
         {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
@@ -40,18 +44,18 @@ static PyTypeObject AioRequest_TypeObject = {
 
 static AioRequest *make_aiorequest(int fd)
 {
-	AioRequest *request;
-	request = PyObject_GC_New(AioRequest, &AioRequest_TypeObject);
-    request->fd = fd;
-	request->aiocbp = malloc(sizeof(struct aiocb));
-    request->usable = 1;
-	request->aiocbp->aio_reqprio = 0;
-    request->aiocbp->aio_fildes = fd;
-	request->aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-	request->aiocbp->aio_sigevent.sigev_signo = SIGUSR1;
-	request->aiocbp->aio_sigevent.sigev_value.sival_ptr = request;
+        AioRequest *request;
+        request = PyObject_GC_New(AioRequest, &AioRequest_TypeObject);
+        request->fd = fd;
+        request->aiocbp = malloc(sizeof(struct aiocb));
+        request->usable = 1;
+        request->aiocbp->aio_reqprio = 0;
+        request->aiocbp->aio_fildes = fd;
+        request->aiocbp->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+        request->aiocbp->aio_sigevent.sigev_signo = SIGUSR1;
+        request->aiocbp->aio_sigevent.sigev_value.sival_ptr = request;
 
-	return request;
+        return request;
 }
 
 static PyObject *AioRequest_Read(PyObject *self, PyObject *args)
@@ -162,6 +166,18 @@ static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args)
                 return NULL;
         }
         Py_RETURN_NONE;
+}
+
+static PyObject *AioRequest_Fileno(Pyobject *self, PyObject *args)
+{
+    AioRequest *request = (AioRequest *)self;
+    return PyLong_FromLong(self->fd);
+}
+
+static PyObject *AioRequest_Reqtype(Pyobject *self, PyObject *args)
+{
+    AioRequest *request = (AioRequest *)self;
+    return PyLong_FromLong(self->req_type);
 }
 
 static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
