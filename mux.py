@@ -14,7 +14,9 @@ class Mux:
     def run(self):
         while True:
             if not self.pending_calls:
+                print('ENTERING HIBRENATING STATE')
                 self.hpoller.poll()
+                print('LEFT HIBRENATING STATE')
 
             if self.pending_calls:
                 callback = self.pending_calls.popleft()

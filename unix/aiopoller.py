@@ -23,7 +23,7 @@ class AioPoller(IOPollerBase):
                 continue
             submissions.pop(submission.ident)
             submission.call_callbacks(self.mux, result)
-            print(submission, 'SCHEDULE', 'RESULT', submission)
+            print(submission, 'SCHEDULED  ', 'RESULT', result)
             completed.append(submission)
 
         return completed
