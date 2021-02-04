@@ -38,7 +38,7 @@ class SignalHub:
         return signal.sigtimedwait(list(self.sigmap), timeout)
 
     def poll_no_timeout(self):
-        return signal.sigwaitinfo(list(self.sigmap))
+        return signal.sigwait(list(self.sigmap))
 
 
 signal_hub = SignalHub()
