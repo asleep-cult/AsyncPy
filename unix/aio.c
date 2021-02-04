@@ -171,13 +171,13 @@ static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args)
 static PyObject *AioRequest_Fileno(PyObject *self, PyObject *args)
 {
         AioRequest *request = (AioRequest *)self;
-        return PyLong_FromLong(self->fd);
+        return PyLong_FromLong(request->fd);
 }
 
 static PyObject *AioRequest_Reqtype(PyObject *self, PyObject *args)
 {
         AioRequest *request = (AioRequest *)self;
-        return PyLong_FromLong(self->req_type);
+        return PyLong_FromLong(request->req_type);
 }
 
 static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
