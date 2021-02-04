@@ -21,8 +21,8 @@ typedef struct AioRequest {
 
 static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args);
 static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args);
-static PyObject *AioRequest_Fileno(Pyobject *self, PyObject *args);
-static PyObject *AioRequest_Reqtype(Pyobject *self, PyObject *args);
+static PyObject *AioRequest_Fileno(PyObject *self, PyObject *args);
+static PyObject *AioRequest_Reqtype(PyObject *self, PyObject *args);
 
 static PyMethodDef AioRequest_Methods[] = {
         {"get_result", AioRequest_GetResult, METH_VARARGS, NULL},
@@ -168,13 +168,13 @@ static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args)
         Py_RETURN_NONE;
 }
 
-static PyObject *AioRequest_Fileno(Pyobject *self, PyObject *args)
+static PyObject *AioRequest_Fileno(PyObject *self, PyObject *args)
 {
         AioRequest *request = (AioRequest *)self;
         return PyLong_FromLong(self->fd);
 }
 
-static PyObject *AioRequest_Reqtype(Pyobject *self, PyObject *args)
+static PyObject *AioRequest_Reqtype(PyObject *self, PyObject *args)
 {
         AioRequest *request = (AioRequest *)self;
         return PyLong_FromLong(self->req_type);
