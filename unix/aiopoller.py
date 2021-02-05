@@ -1,7 +1,7 @@
 from . import aio
 import signal
 
-from ..base_pollers import IOPollerBase, IOPollerSubmission, MuxHibrenatePoller
+from ..base_pollers import IOPollerBase, IOPollerSubmission, MuxHibernatePoller
 from ..utils import get_fileno
 from .signals import signal_hub
 
@@ -66,7 +66,7 @@ class AioPoller(IOPollerBase):
         return submission
 
 
-class AioHibrenatePoller(MuxHibrenatePoller):
+class AioHibernatePoller(MuxHibrenatePoller):
     def poll(self):
         self.awake = False
         signal_hub.poll_no_timeout()
