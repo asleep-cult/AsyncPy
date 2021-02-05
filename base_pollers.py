@@ -1,29 +1,3 @@
-import functools
-
-
-class IOPollerSubmission:
-    """
-    A submission to an I/O poller.
-    """
-    def __init__(self, ident, callbacks=None, internal=None, window=None):
-        self.ident = ident
-        self.callbacks = callbacks
-        self.internal = internal
-        self.times_polled = 0
-        self.window = window
-
-    def call_callbacks(self, mux, *args, **kwargs):
-        for callback in self.callbacks:
-            callback = functools.partial(callback, *args, **kwargs)
-            mux.add_pending_call(callback)
-
-    def __repr__(self):
-        return \
-            f'<IOPollerSubmission ident={self.ident}, ' \
-            f'callbacks={self.callbacks}, window={self.window}, ' \
-            f'times_polled={self.times_polled}>'
-
-
 class IOPollerBase:
     """
     A "selector" that polls fds and asynchronous kernel requests

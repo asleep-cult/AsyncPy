@@ -1,7 +1,7 @@
 from . import aio
 import signal
 
-from ..base_pollers import IOPollerBase, IOPollerSubmission, MuxHibernatePoller
+from ..base_pollers import IOPollerBase, MuxHibernatePoller
 from ..utils import get_fileno
 from .signals import signal_hub
 
@@ -10,60 +10,87 @@ READ = 0
 WRITE = 1
 
 
+class AioRequest:
+    def __init__(self, internal, callbacks=None):
+        self.internal = internal
+        self.result = None
+        self.callbacks = callbacks or []
+
+    def add_callback(self, callback):
+        self.callbacks.append(callback)
+
+    def call_callbacks(self):
+        for callback in self.callbacks:
+            callback()
+
+
+class AioPollerSubmission:
+    def __init__(self, fd):
+        self.fd = fd
+        self.requests = []
+
+    def add_request(self, request):
+        self.requests.append(request)
+
+    def __repr__(self):
+        return \
+            'AioPollerSubmission(fd=%s, outstanding_requessts=%s)' % (
+                self.fd,
+                len(self.requests)
+            )
+
+
 class AioPoller(IOPollerBase):
+    @property
+    def requests(self):
+        requests = []
+        for read in self._reads.values():
+            requests.extend(read.requests)
+        for write in self._writes.values():
+            requests.extend(write.requests)
+
     def _check_submissions(self, submissions):
         completed = []
+        for submission in submissions:
+            for request in submissions.requests:
+                try:
+                    request.result = request.get_result()
+                except BlockingIOError:
+                    continue
 
-        for submission in list(submissions.values()):
-            submission.times_polled += 1
-            try:
-                result = submission.internal.get_result()
-            except BlockingIOError:
-                print(submission, 'NOT READY')
-                continue
-            submissions.pop(submission.ident)
-            submission.call_callbacks(self.mux, result)
-            print(submission, 'SCHEDULED  ', 'RESULT', result)
-            completed.append(submission)
-
+                submission.requests.remove(request)
+                completed.append(request)
         return completed
+
+    def submit(self, request, callbacks=None):
+        req_type = request.req_type()
+        fd = request.fileno()
+        submissions = self._reads if req_type == READ else self._writes
+        submission = submissions.get(fd)
+        if submission is None:
+            submission = AioPollerSubmission(fd)
+        request = AioRequest(request, callbacks)
+        submission.add_request(request)
+        return request
+
+    def read(self, fd, bufsize, callbacks=None):
+        fd = get_fileno(fd)
+        request = self.submit(aio.read(fd, bufsize), callbacks)
+        return request
+
+    def write(self, fd, data, callbacks=None):
+        fd = get_fileno(fd)
+        request = self.submit(aio.write(fd, data), callbacks)
+        return request
 
     def poll(self, timeout=0):
         if timeout != 0:
-            internal_requests = \
-                [s.internal for s in self._reads.values()] + \
-                [s.internal for s in self._writes.values()]
-            aio.suspend(internal_requests, timeout)
+            internal = [r.internal for r in self.requests]
+            aio.suspend(internal, timeout)
 
-        reads = self._check_submissions(self._reads)
-        writes = self._check_submissions(self._writes)
+        reads = self._check_submissions(self._reads.values())
+        writes = self._check_submissions(self._writes.values())
         return reads, writes
-
-    def submit(self, aio_request, callbacks=None):
-        fd = aio_request.fileno()
-        request_type = aio_request.req_type()
-        submission = IOPollerSubmission(
-            fd, callbacks=callbacks, internal=aio_request
-        )
-
-        if request_type == READ:
-            self._reads[fd] = submission
-        elif request_type == WRITE:
-            self._writes[fd] = submission
-
-        return submission
-
-    def read(self, fd, bufsize, callbacks):
-        fd = get_fileno(fd)
-        request = aio.read(fd, bufsize)
-        submission = self.submit(request, callbacks)
-        return submission
-
-    def write(self, fd, data, callbacks):
-        fd = get_fileno(fd)
-        request = aio.write(fd, data)
-        submission = self.submit(request, callbacks)
-        return submission
 
 
 class AioHibernatePoller(MuxHibernatePoller):
