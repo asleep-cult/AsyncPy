@@ -3,9 +3,6 @@
 #include <signal.h>
 #include <Python.h>
 
-/* TODO: Add signal handler so the process isn't terminated */
-/* Get rid of memory leaks */
-
 enum AioRequest_Type {
         READ,
         WRITE
@@ -22,6 +19,7 @@ static PyObject *AioRequest_GetResult(PyObject *self, PyObject *args);
 static PyObject *AioRequest_Cancel(PyObject *self, PyObject *args);
 static PyObject *AioRequest_Fileno(PyObject *self, PyObject *args);
 static PyObject *AioRequest_Reqtype(PyObject *self, PyObject *args);
+static void AioRequest_Dealloc(AioRequest *self);
 
 static PyMethodDef AioRequest_Methods[] = {
         {"get_result", AioRequest_GetResult, METH_VARARGS, NULL},
@@ -38,13 +36,14 @@ static PyTypeObject AioRequest_TypeObject = {
         .tp_itemsize = 0,
         .tp_methods = AioRequest_Methods,
         .tp_flags = Py_TPFLAGS_DEFAULT,
-        .tp_new = PyType_GenericNew
+        .tp_new = PyType_GenericNew,
+        .tp_dealloc = (destructor)AioRequest_Dealloc
 };
 
 static AioRequest *make_aiorequest(int fd)
 {
         AioRequest *request;
-        request = PyObject_GC_New(AioRequest, &AioRequest_TypeObject);
+        request = PyObject_New(AioRequest, &AioRequest_TypeObject);
         request->fd = fd;
         request->aiocbp = malloc(sizeof(struct aiocb));
         request->aiocbp->aio_reqprio = 0;
@@ -172,6 +171,16 @@ static PyObject *AioRequest_Reqtype(PyObject *self, PyObject *args)
         return PyLong_FromLong(request->req_type);
 }
 
+static void AioRequest_Dealloc(AioRequest *self)
+{
+        if (self->req_type == READ) {
+            free((void *)self->aiocbp->aio_buf);
+        }
+        free(self->aiocbp);
+        PyTypeObject *tp = Py_TYPE(self);
+        tp->tp_free(self);
+}
+
 static PyObject *Aio_Suspend(PyObject *self, PyObject *args)
 {
         PyObject *requests = PyTuple_GetItem(args, 0);
@@ -236,7 +245,7 @@ PyInit_aio(void)
         if (PyType_Ready(object) < 0) {
                 return NULL;
         }
-        Py_INCREF((PyObject *)object);
+        Py_INCREF(object);
         int status = PyModule_AddObject(
                 module,
                 "AioRequest",
