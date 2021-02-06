@@ -1,6 +1,7 @@
-from . import aio
 import signal
+import functools
 
+from . import aio
 from ..base_pollers import IOPollerBase, MuxHibernatePoller
 from ..utils import get_fileno
 from .signals import signal_hub
@@ -11,7 +12,8 @@ WRITE = 1
 
 
 class AioRequest:
-    def __init__(self, internal, callbacks=None):
+    def __init__(self, mux, internal, callbacks=None):
+        self.mux = mux    	
         self.internal = internal
         self.result = None
         self.callbacks = callbacks or []
@@ -19,9 +21,10 @@ class AioRequest:
     def add_callback(self, callback):
         self.callbacks.append(callback)
 
-    def call_callbacks(self):
+    def call_callbacks(self, *args):
         for callback in self.callbacks:
-            callback()
+            callback = functools.partial(callback, *args)
+            self.mux.add_pending_call(callback)
 
 
 class AioPollerSubmission:
@@ -52,12 +55,13 @@ class AioPoller(IOPollerBase):
     def _check_submissions(self, submissions):
         completed = []
         for submission in submissions:
-            for request in submissions.requests:
+            for request in submission.requests:
                 try:
-                    request.result = request.get_result()
+                    request.result = request.internal.get_result()
                 except BlockingIOError:
                     continue
 
+                request.call_callbacks(request.result)
                 submission.requests.remove(request)
                 completed.append(request)
         return completed
@@ -69,7 +73,8 @@ class AioPoller(IOPollerBase):
         submission = submissions.get(fd)
         if submission is None:
             submission = AioPollerSubmission(fd)
-        request = AioRequest(request, callbacks)
+            submissions[fd] = submission
+        request = AioRequest(self.mux, request, callbacks)
         submission.add_request(request)
         return request
 
