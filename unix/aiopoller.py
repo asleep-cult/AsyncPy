@@ -13,7 +13,7 @@ WRITE = 1
 
 class AioRequest:
     def __init__(self, mux, internal, callbacks=None):
-        self.mux = mux    	
+        self.mux = mux
         self.internal = internal
         self.result = None
         self.callbacks = callbacks or []
@@ -37,7 +37,7 @@ class AioPollerSubmission:
 
     def __repr__(self):
         return \
-            'AioPollerSubmission(fd=%s, outstanding_requessts=%s)' % (
+            'AioPollerSubmission(fd=%s, outstanding_requests=%s)' % (
                 self.fd,
                 len(self.requests)
             )
@@ -49,6 +49,7 @@ class AioPoller(IOPollerBase):
         requests = []
         for read in self._reads.values():
             requests.extend(read.requests)
+
         for write in self._writes.values():
             requests.extend(write.requests)
 
@@ -64,6 +65,7 @@ class AioPoller(IOPollerBase):
                 request.call_callbacks(request.result)
                 submission.requests.remove(request)
                 completed.append(request)
+
         return completed
 
     def submit(self, request, callbacks=None):
@@ -71,9 +73,11 @@ class AioPoller(IOPollerBase):
         fd = request.fileno()
         submissions = self._reads if req_type == READ else self._writes
         submission = submissions.get(fd)
+
         if submission is None:
             submission = AioPollerSubmission(fd)
             submissions[fd] = submission
+
         request = AioRequest(self.mux, request, callbacks)
         submission.add_request(request)
         return request
